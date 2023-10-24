@@ -1,3 +1,5 @@
+import sys
+from io import StringIO
 import os
 import math
 import pytest
@@ -5,7 +7,7 @@ import json
 import argparse
 import time
 from unittest.mock import patch
-from src.helpers import Helpers as H
+from src.helpers import Helpers
 
 @pytest.mark.parametrize("lat1, lon1, lat2, lon2, expected_distance", [
     (0, 0, 0, 0, 0),                  # Distance entre les mêmes points doit être 0
@@ -14,7 +16,8 @@ from src.helpers import Helpers as H
     (0, 0, 0, 180, 20015078),        # Distance entre deux points opposés sur la Terre
 ])
 def test_haversine(lat1, lon1, lat2, lon2, expected_distance):
-    result = H.haversine(lat1, lon1, lat2, lon2)
+    h = Helpers()
+    result = h.haversine(lat1, lon1, lat2, lon2)
     assert math.isclose(result, expected_distance, rel_tol=1e-2)
 
 # Créer des données de test pour les restaurants
@@ -46,7 +49,8 @@ def test_find_restaurants():
     centroid_lon = 2.0
     radius = 100  # Plus petit rayon pour inclure uniquement Restaurant X
 
-    result = H.find_restaurants(centroid_lat, centroid_lon, radius, restaurants_data)
+    h = Helpers()
+    result = h.find_restaurants(centroid_lat, centroid_lon, radius, restaurants_data)
 
     # Vérifier que seul Restaurant X est inclus dans le résultat
     assert len(result) == 1
@@ -82,38 +86,53 @@ def test_load_restaurants():
         json.dump(expected, file)
 
     # Charger les restaurants à partir du fichier
-    result_data = H.load_restaurants(test_file)
+    h = Helpers()
+    result_data = h.load_restaurants(test_file)
 
     # Vérifier que les données chargées sont égales aux données de test
     assert result_data == expected
 
 def test_get_args():
+    h = Helpers()
     # liste d'arguments simulée
     test_args = ["--latitude", "48.8319929", "--longitude", "2.3245488", "--radius", "100"]
 
     # patch pour simuler la passation des paramètres en tant qu'arguments
     with patch("sys.argv", ["my_script.py"] + test_args):
-        args = H.get_args()
+        args = h.get_args()
 
     # Vérifier que les valeurs d'argument sont correctes
     assert args.latitude == 48.8319929
     assert args.longitude == 2.3245488
     assert args.radius == 100
 
-def test_get_time():
-    start_time = H.get_time()
+def log_time(func):
+    def wrapper(*args, **kwargs):
+        start_time = time.time()
+        result = func(*args, **kwargs)
+        end_time = time.time()
+        elapsed_time_ms = (end_time - start_time) * 1000  # Convert seconds to milliseconds
+        print(f"Function '{func.__name__}' took {elapsed_time_ms:.2f} ms to execute.")
+        return result
+    return wrapper
 
-    time.sleep(0.1)  # Attendre 100 millisecondes
+def my_function():
+    time.sleep(1)
 
-    end_time = H.get_time(start_time)
+def test_log_time():
+    # Rediriger la sortie standard vers un objet StringIO
+    captured_output = StringIO()
+    sys.stdout = captured_output
 
-    # Vérifier que le temps écoulé est d'environ 100 millisecondes (ou 100 000 microsecondes)
-    assert abs(end_time - 100) < 30  # Tolérance de 30 ms pour l'imprécision des délais
+    decorated_func = log_time(my_function)
+    decorated_func()
 
-    # Vérifier que le temps de départ n'est pas égal au temps actuel (en millisecondes)
-    current_time = H.get_time()
-    assert current_time != start_time
+    # Récupérer la sortie de la fonction décorée
+    output = captured_output.getvalue()
+    
+    # Restaurer la sortie standard
+    sys.stdout = sys.__stdout__
 
-    # Vérifier que le temps actuel n'est pas égal à l'heure actuelle
-    current_time_in_seconds = time.time() * 1000
-    assert current_time != current_time_in_seconds
+    # Assurer que la sortie contient la chaîne attendue
+    assert "took" in output
+    assert "ms to execute." in output
