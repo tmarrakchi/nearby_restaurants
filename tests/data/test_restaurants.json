@@ -1,0 +1,1 @@
+{"type": "FeatureCollection", "features": [{"type": "Feature", "properties": {"name": "Restaurant A"}, "geometry": {"type": "Point", "coordinates": [2.0, 48.0]}}, {"type": "Feature", "properties": {"name": "Restaurant B"}, "geometry": {"type": "Point", "coordinates": [2.1, 48.1]}}]}
