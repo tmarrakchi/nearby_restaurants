@@ -25,7 +25,7 @@ class Helpers:
         # Haversine formula
         dlat = lat2 - lat1
         dlon = lon2 - lon1
-        a = math.sin(dlat / 2) ** 2 + math.cos(lat1) * math.cos(lat2) * math.sin(dlon / 2) ** s2
+        a = math.sin(dlat / 2) ** 2 + math.cos(lat1) * math.cos(lat2) * math.sin(dlon / 2) ** 2
         c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
 
         # Calculate the distance in meters
