@@ -26,8 +26,6 @@ echo "Latitude : $latitude"
 echo "Longitude : $longitude"
 echo "Rayon : $radius"
 
-# Vous pouvez maintenant exécuter le reste de votre programme ici
-
 # Exemple : Exécution du script Python avec les valeurs extraites
 python main.py --latitude "$latitude" --longitude "$longitude" --radius "$radius"
 
