@@ -2,8 +2,10 @@ import math
 import json
 import argparse
 import time
+from src.point import Point
+from src.restaurant import Restaurant
 
-# Function to calculate the Haversine distance between two coordinates
+# Function to calculate the Haversine distance between two points
 def log_time(func):
     def wrapper(*args, **kwargs):
         start_time = time.time()
@@ -14,13 +16,14 @@ def log_time(func):
         return result
     return wrapper
 
-class Helpers: 
-    def haversine(self, lat1, lon1, lat2, lon2):
+class Helpers:
+    def haversine(self, point1, point2):
         # Radius of the Earth in meters (6,371km)
         earth_radius = 6371000
 
         # Convert latitude and longitude from degrees to radians (trigonometric functions)
-        lat1, lon1, lat2, lon2 = map(math.radians, [lat1, lon1, lat2, lon2])
+        lat1, lon1 = map(math.radians, [point1.latitude, point1.longitude])
+        lat2, lon2 = map(math.radians, [point2.latitude, point2.longitude])
 
         # Haversine formula
         dlat = lat2 - lat1
@@ -29,31 +32,25 @@ class Helpers:
         c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
 
         # Calculate the distance in meters
-        distance = earth_radius * c
+        distance = round(earth_radius * c, 2)
 
         return distance
 
     # Search for restaurants within a specified radius of the centroid
     @log_time
-    def find_restaurants(self, centroid_lat, centroid_lon, radius, restaurants):
+    def find_restaurants(self, centroid_point, radius, restaurants):
         nearby_restaurants = []
 
         for restaurant in restaurants["features"]:
             restaurant_lat = restaurant["geometry"]["coordinates"][1]
             restaurant_lon = restaurant["geometry"]["coordinates"][0]
+            restaurant_point = Point(restaurant_lat, restaurant_lon)
 
-            distance = self.haversine(centroid_lat, centroid_lon, restaurant_lat, restaurant_lon)
+            distance = self.haversine(centroid_point, restaurant_point)
 
             if distance <= radius:
                 restaurant_name = restaurant["properties"]["name"]
-                nearby_restaurants.append(
-                    {
-                        "name": restaurant_name,
-                        "longitude": restaurant_lon,
-                        "latitude": restaurant_lat,
-                        "distance": round(distance, 2),  # Round distance to two decimal places
-                    }
-                )
+                nearby_restaurants.append(Restaurant(restaurant_name, restaurant_lat, restaurant_lon, distance))
 
         return nearby_restaurants
 
@@ -64,7 +61,6 @@ class Helpers:
             data = json.load(file)
         return data
 
-    
     def get_args(self):
         parser = argparse.ArgumentParser(description="Find nearby restaurants")
         parser.add_argument("--latitude", type=float, required=True, help="Latitude of the centroid")
